@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trimiata.ru/schemas/events/event.json",
+  "title": "TrimiataEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "source",
+    "event_type",
+    "event_time",
+    "user_key",
+    "session_key"
+  ],
+  "properties": {
+    "event_id": { "type": "string", "minLength": 1 },
+    "source": {
+      "type": "string",
+      "enum": ["web", "metrika", "app", "backend"]
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "product_view",
+        "add_to_cart",
+        "remove_from_cart",
+        "purchase",
+        "search",
+        "recommendation_show",
+        "recommendation_click"
+      ]
+    },
+    "event_time": { "type": "string", "minLength": 1 },
+    "user_key": { "type": "string", "minLength": 1 },
+    "session_key": { "type": "string", "minLength": 1 },
+
+    "product_id": { "type": ["integer", "string", "null"] },
+    "context_type": { "type": ["string", "null"] },
+    "context_id": { "type": ["string", "null"] },
+    "page_url": { "type": ["string", "null"] },
+    "page_type": { "type": ["string", "null"] },
+    "referrer": { "type": ["string", "null"] },
+    "device_type": { "type": ["string", "null"] },
+    "utm_source": { "type": ["string", "null"] },
+    "utm_medium": { "type": ["string", "null"] },
+    "utm_campaign": { "type": ["string", "null"] },
+    "search_query": { "type": ["string", "null"] },
+    "position": { "type": ["integer", "string", "null"] },
+    "payload": { "type": ["object", "null"] }
+  }
+}
+
