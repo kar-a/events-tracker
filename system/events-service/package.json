@@ -2,17 +2,13 @@
   "name": "@trimiata/events-service",
   "private": true,
   "type": "module",
-  "workspaces": [
-    "apps/*",
-    "packages/*/node"
-  ],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "build": "npm -ws run build",
-    "lint:types": "npm -ws run lint:types",
-    "test": "npm -ws run test"
+    "build": "echo \"Install per-package: apps/collector-node and packages/contract/node\"",
+    "lint:types": "echo \"Install per-package: apps/collector-node and packages/contract/node\"",
+    "test": "echo \"Install per-package: apps/collector-node and packages/contract/node\""
   }
 }
 

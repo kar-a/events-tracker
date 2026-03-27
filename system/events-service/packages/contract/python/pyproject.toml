@@ -1,0 +1,10 @@
+[project]
+name = "trimiata-events-contract"
+version = "0.1.0"
+description = "Shared event contract (Python bindings)"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.ruff]
+line-length = 100
+

@@ -39,10 +39,10 @@ bash /path/to/repo/app/local/changes/db/1359/scripts/00_prepare_host.sh
 После этого:
 - установлены `docker`, `docker compose plugin`, `curl`, `jq`;
 - создана структура данных в `EVENTS_DATA_ROOT` (абсолютный путь из `.env`), например:
-  - `/var/www/www-root/data/www/dev/bitrix-dev/system/events/clickhouse/data`
-  - `/var/www/www-root/data/www/dev/bitrix-dev/system/events/clickhouse/log`
-  - `/var/www/www-root/data/www/dev/bitrix-dev/system/events/redis/data`
-  - `/var/www/www-root/data/www/dev/bitrix-dev/system/events/backups`
+  - `/var/www/www-root/data/www/dev/bitrix-dev/system/events-service/data/clickhouse/data`
+  - `/var/www/www-root/data/www/dev/bitrix-dev/system/events-service/data/clickhouse/log`
+  - `/var/www/www-root/data/www/dev/bitrix-dev/system/events-service/data/redis/data`
+  - `/var/www/www-root/data/www/dev/bitrix-dev/system/events-service/data/backups`
 
 ---
 
@@ -115,7 +115,7 @@ docker exec trimiata-events-clickhouse clickhouse-client \
 bash /path/to/repo/app/local/changes/db/1359/scripts/50_backup.sh
 ```
 
-Скрипт пишет `.sql.gz` в `system/events/backups`.
+Скрипт пишет `.sql.gz` в `${EVENTS_DATA_ROOT}/backups`.
 
 ---
 

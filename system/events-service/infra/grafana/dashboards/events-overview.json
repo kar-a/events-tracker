@@ -1,0 +1,110 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse_events"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT toStartOfMinute(event_time) AS t, count() AS c FROM ${CLICKHOUSE_DB:raw}.events_raw WHERE $__timeFilter(event_time) GROUP BY t ORDER BY t",
+          "format": "time_series"
+        }
+      ],
+      "title": "Events / minute",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse_events"
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "id": 2,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "right", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT event_type AS metric, count() AS value FROM ${CLICKHOUSE_DB:raw}.events_raw WHERE $__timeFilter(event_time) GROUP BY event_type ORDER BY value DESC LIMIT 20",
+          "format": "table"
+        }
+      ],
+      "title": "Top event_type",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse_events"
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 8 },
+      "id": 3,
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT event_time, event_type, product_id, user_key, session_key FROM ${CLICKHOUSE_DB:raw}.events_raw WHERE $__timeFilter(event_time) ORDER BY ingested_at DESC LIMIT 200",
+          "format": "table"
+        }
+      ],
+      "title": "Last 200 events",
+      "type": "table"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "tags": [
+    "trimiata",
+    "events"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Trimiata events — overview",
+  "uid": "trimiata_events_overview",
+  "version": 1,
+  "weekStart": ""
+}
+

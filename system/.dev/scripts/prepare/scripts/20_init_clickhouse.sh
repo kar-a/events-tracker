@@ -13,9 +13,9 @@ fi
 source .env
 
 SQL_FILES=(
-	"sql/01_clickhouse_events_raw.sql"
-	"sql/02_clickhouse_import_jobs.sql"
-	"sql/03_clickhouse_recommendation_pairs.sql"
+	"../../../events-service/infra/clickhouse/sql/01_clickhouse_events_raw.sql"
+	"../../../events-service/infra/clickhouse/sql/02_clickhouse_import_jobs.sql"
+	"../../../events-service/infra/clickhouse/sql/03_clickhouse_recommendation_pairs.sql"
 )
 
 for sql_file in "${SQL_FILES[@]}"; do

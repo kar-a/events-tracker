@@ -1,0 +1,15 @@
+{
+  "event_id": "manual-demo-1",
+  "source": "web",
+  "event_type": "product_view",
+  "event_time": "2026-03-27T12:00:00Z",
+  "user_key": "metrika:demo",
+  "session_key": "web:session:demo",
+  "product_id": 12345,
+  "context_type": "product",
+  "context_id": "12345",
+  "page_url": "https://trimiata.ru/catalog/demo/",
+  "page_type": "product",
+  "payload": { "price": 189900, "currency": "RUB" }
+}
+

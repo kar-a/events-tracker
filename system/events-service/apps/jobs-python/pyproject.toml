@@ -1,0 +1,10 @@
+[project]
+name = "trimiata-events-jobs"
+version = "0.0.1"
+description = "Trimiata events jobs (skeleton)"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.ruff]
+line-length = 100
+

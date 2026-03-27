@@ -1,0 +1,10 @@
+{
+  "event_id": "manual-demo-bad-1",
+  "source": "web",
+  "event_type": "product_view",
+  "event_time": "2026-03-27T12:00:00Z",
+  "user_key": "metrika:demo",
+  "session_key": "web:session:demo",
+  "page_url": "https://trimiata.ru/catalog/demo/"
+}
+

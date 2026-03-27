@@ -15,12 +15,10 @@
 ## Структура
 
 - `docker-compose.events.yml` - контейнеры `clickhouse`, `redis`, `grafana`, `collector` (Node.js)
-- `grafana/*` - Grafana: datasource ClickHouse + стартовый dashboard
-- `collector/*` - коллектор событий (Node) + каркас python
+- `grafana/*` - DEPRECATED: перенесено в `system/events-service/infra/grafana`
+- `collector/*` - DEPRECATED: перенесено в `system/events-service/apps/*` + `system/events-service/packages/contract`
 - `.env.example` - переменные окружения
-- `sql/01_clickhouse_events_raw.sql` - таблица событий
-- `sql/02_clickhouse_import_jobs.sql` - таблица статусов импортов
-- `sql/03_clickhouse_recommendation_pairs.sql` - пример таблицы пар рекомендаций
+- `sql/*` - DEPRECATED: перенесено в `system/events-service/infra/clickhouse/sql`
 - `scripts/00_prepare_host.sh` - подготовка хоста
 - `scripts/10_up.sh` - запуск контура
 - `scripts/20_init_clickhouse.sh` - создание таблиц
@@ -41,10 +39,10 @@ bash /path/to/repo/app/local/changes/db/1359/scripts/00_prepare_host.sh
 После этого:
 - установлены `docker`, `docker compose plugin`, `curl`, `jq`;
 - создана структура данных в `EVENTS_DATA_ROOT` (абсолютный путь из `.env`), например:
-  - `/var/www/www-root/data/www/dev/bitrix-dev/system/events/clickhouse/data`
-  - `/var/www/www-root/data/www/dev/bitrix-dev/system/events/clickhouse/log`
-  - `/var/www/www-root/data/www/dev/bitrix-dev/system/events/redis/data`
-  - `/var/www/www-root/data/www/dev/bitrix-dev/system/events/backups`
+  - `/var/www/www-root/data/www/dev/bitrix-dev/system/events-service/data/clickhouse/data`
+  - `/var/www/www-root/data/www/dev/bitrix-dev/system/events-service/data/clickhouse/log`
+  - `/var/www/www-root/data/www/dev/bitrix-dev/system/events-service/data/redis/data`
+  - `/var/www/www-root/data/www/dev/bitrix-dev/system/events-service/data/backups`
 
 ---
 
@@ -119,7 +117,7 @@ docker exec trimiata-events-clickhouse clickhouse-client \
 bash /path/to/repo/app/local/changes/db/1359/scripts/50_backup.sh
 ```
 
-Скрипт пишет `.sql.gz` в `system/events/backups`.
+Скрипт пишет `.sql.gz` в `${EVENTS_DATA_ROOT}/backups`.
 
 ---
 
