@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Trimiata events
+    orgId: 1
+    folder: Trimiata events
+    type: file
+    disableDeletion: true
+    editable: false
+    options:
+      path: /var/lib/grafana/dashboards

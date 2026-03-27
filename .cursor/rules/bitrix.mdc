@@ -1,0 +1,299 @@
+---
+alwaysApply: true
+---
+
+title: Bitrix project assistant playbook (Trimiata)
+
+purpose:
+- Дать ассистенту практичные правила для чтения, навигации и безопасного редактирования Bitrix (D7) моно-репозитория.
+
+golden_rules:
+- Читай перед тем, как писать. Делаем точечные правки; не рефакторим несвязанное.
+- Соблюдай SEO/URL политику и существующие редиректы. Не создавай дубликаты URL.
+- Никаких секретов в VCS (.env, токены). Не печатай реальные токены в чат.
+- **Безопасность:** Всегда соблюдай правила из `docs/security.md`: экранирование вывода, валидация ввода, проверка прав доступа, CSRF защита, защита от XSS/SQLi/Open Redirect, фильтрация чувствительных данных из логов.
+- Используй готовые хелперы и события; не переизобретай инфраструктуру Bitrix.
+- Долгие операции разбивай на короткие батчи. Избегай интерактивных команд.
+- Максимальная унификация и повторное использование: выносить общие операции в хелперы и единые точки правды.
+- Отсутствие ненужного кода: избегать дублирования и лишних веток обработки; минимальная правка с максимальным эффектом.
+- Чистка устаревшего кода рядом с правками: удалять мёртвые и неиспользуемые участки.
+- Поддержание чистоты кода: компактные читаемые конструкции, tabs, удаление неиспользуемых импортов при каждой правке.
+ - Поддержание чистоты кода: компактные читаемые конструкции, tabs, удаление неиспользуемых импортов при каждой правке.
+ - Предпочитать switch при ветвлениях по одному источнику данных; избегать одноразовых временных переменных, если условие читаемо inline.
+
+stack_basics:
+- DocumentRoot: `app/`. Ядро Bitrix в `app/bitrix` (монтируется Docker'ом).
+- Доменный код: `app/local/php_interface/lib/app/*` (Ctx/Seo/Catalog/Order/Template/etc.).
+- Компоненты: `app/local/components/*`; шаблоны в `app/local/templates/trimiata/components/...`.
+- Точки входа/роутинг: `app/urlrewrite.php` + маршрутизация внутри компонентов.
+
+output_contracts:
+- Для любой задачи по коду предоставляй разделы:
+  - PLAN (3–8 пунктов)
+  - CHANGES (unified diffs/новые файлы, относительные пути проекта)
+  - CONFIG/COMMANDS (docker, composer, cli; без интерактива)
+  - TESTS (unit/functional где разумно) и/или CHECKLIST (ручное QA)
+  - ROLLBACK (если есть риск миграций/перезаписи кэша)
+- Для ревью/рефакторинга: DIFF REVIEW (severity), PATCH (diffs), PERF/SEC/SEO заметки, RELEASE CHECKLIST.
+
+context_plan:
+- Документы → `docs/{project-overview,architecture-map,modules-and-components,data-model,integrations,runbook,security-and-quality,knowledge-map,CHANGELOG}`
+- **Безопасность:** Всегда руководствоваться правилами из `docs/security.md` при написании и проверке кода. Документ содержит политику безопасности, правила защиты от XSS/CSRF/SQLi, обработку пользовательского ввода, валидацию параметров, защиту от загрузки файлов, логирование и другие критические аспекты безопасности.
+- Вход/нормализация → `local/php_interface/lib/events/main/BeforeProlog.php::{init,checkForceRedirects,initSeo}`
+- Каталог/роутинг → `local/components/app/catalog.full/class.php::{getUrlTemplates,prepareData}`
+- Смарт‑фильтр (клиент/сервер) → `app/local/changes/template/src/js/app/AppSmartFilter.js` → `.../catalog.full/main/baseBlocks/ajax_{before,after}.php`
+- Хелперы URL/фильтра → `App\Catalog\Helper::{getLinkByParams,checkUriOrder,checkUriOrderAndRedirect}`
+- Интеграции → `app/api/{webhook,1c}/*`, `App/Order/External/ImShop`
+ - Выгрузки YML → `app/api/yml/index.php`, `App\\Export\\{Base,Yml,YamarketExportSetupTable}`, события в `local/php_interface/lib/events/yandexmarket/*`
+
+fast_context_methods:
+- Семантические вопросы вида «Где/Как/Кто делает X?» по `app/*` + узкий просмотр файлов.
+- Греп быстрых паттернов: `getUrlTemplates\(|LocalRedirect\(|checkUriOrder\(|AppSmartFilter` (файл: `app/local/changes/template/src/js/app/AppSmartFilter.js`).
+- Сопоставление с `CHANGELOG.md` (Files → Effects → Intent) для поиска зон.
+
+memory_plan:
+- Инварианты: URL‑политика каталога, исключение SUBCATEGORY из SMART_FILTER_PATH, канонический порядок `checkUriOrder*`, нормализация URL до роутинга.
+- Якорные файлы: BeforeProlog, catalog.full, ajax_before/after, `app/local/changes/template/src/js/app/AppSmartFilter.js`, Catalog/Helper.php, Template/Helper.php.
+- Процедуры: при edits синхронизировать `getUrlTemplates()` ↔ AJAX‑ветки ↔ docs (`architecture-map.md`, `knowledge-map.md`, `CHANGELOG.md`).
+
+memory_process:
+- Для каждой нетривиальной задачи создавай карточку памяти в `docs/memory/` по шаблону `TEMPLATE.md` и добавляй ссылку в `docs/memory/INDEX.md`.
+- Именование файла: `YYYY-MM-DD__task-key__slug.md`.
+- В changelog указывай Files → Effects → Intent и ссылку на карточку (если полезно).
+- Восстановление памяти по истории: если карточки нет, ищи `git log --grep "\\bTASK\\b"`, смотри `git show --name-only <hash>`, выпиши Files/Effects/Intent и оформи карточку; дату бери из git log. Советы и алгоритм см. `docs/memory/RESTORE.md`.
+
+memory_lookup:
+- Быстрый доступ: открой `docs/memory/INDEX.md` и перейди к нужной задаче; ищи по task-key или по затронутым файлам.
+- При старте новой задачи: сначала смотри памяти по близким зонам (каталог, ImShop, фильтры, SEO) и последние записи в `CHANGELOG.md`.
+
+roles:
+- code_agent: быстро и безопасно реализует фичи. Выводит: PLAN → CHANGES (diffs) → COMMANDS → TESTS → CHECKLIST.
+- reviewer_agent: находит дефекты/риски. Выводит: DIFF REVIEW, PATCH, RISK & PERF, SEC & SEO, RELEASE CHECKLIST.
+- devops_agent: воспроизводимые dev/prod. Выводит: PLAN, diffs Docker/Nginx/PHP-FPM/CI, COMMANDS, ROLLBACK.
+- data_seo_agent: ХЛБ/индексы/фиды/микроразметка. Выводит: схему данных, миграции up/down, генераторы, reindex команды, QA чек‑лист.
+
+decision_rules:
+- Если задача неоднозначна — задавай до 3 чётких вопросов. Если «без вопросов» — зафиксируй допущения в ASSUMPTIONS и действуй.
+- Минимальная правка с максимальным эффектом. Без «yak‑shaving».
+- Предпочитай D7 ORM/Events, кеш с понятными ключами и правилами инвалидации.
+- Хэндшейк‑режим ревью: если пользователь пишет «спасибо, задача завершена», ассистент автоматически переключается в роль reviewer_agent и выполняет:
+  - DIFF REVIEW правок с выводом проблем/рисков;
+  - при необходимости — минимальные правки (edits) для фикса очевидных дефектов;
+  - обновление базы знаний/правил (`.cursor/rules/*`, `.cursor/presets/*`) если поведение или процессы изменились;
+  - обновление `docs/CHANGELOG.md` в секции Unreleased (Added/Changed/Removed/Fixed), включая Files → Effects → Intent;
+   - генерацию краткого описания коммита в формате «Files → Effects → Intent (и при 
+  необходимости QA/Checks)», озвучить его в ответе для использования далее;
+  - Сформировать `commit-summary.txt`, СТРОГО только два блока: `Effects →` и `Intent →`. Наполнение — короткая выжимка из полного описания (Files → Effects → Intent + краткий QA) из changelog/карты памяти; БЕЗ списков файлов и БЕЗ QA/Checks.
+  - Текст в `commit-summary.txt` для нетехнической аудитории (чат/руководство): информативный стиль, отражает ценность и преимущества, строит причинно‑следственные связи. 2 коротких абзаца: `Effects →` и `Intent →`.
+  - Если в записи `docs/CHANGELOG.md` нет ссылок на коммиты, reviewer_agent находит относящиеся коммиты (`git log --grep`/по файлам) и добавляет их короткие хэши в конец строки `Intent →` (формат: `commits: \`abc123\`, \`def456\``).
+  - создать карточку памяти задачи в `docs/memory/` по шаблону `TEMPLATE.md` и добавить ссылку в `docs/memory/INDEX.md` (последним пунктом).
+
+export_yml_events:
+- Все обработчики событий `yandex.market` (например, `onExportOfferExtendData`, `onExportOfferWriteData`) обязаны фильтровать выполнение по имени профиля выгрузки (например: `imshop`, `2gis`).
+- Определять профиль через параметры события: `SETUP`/`PROFILE`/`SETUP_ID`/`PROFILE_ID`; при необходимости резолвить через `YamarketExportSetupTable::getProfileById()`.
+- Новые выгрузки добавляем как профили в `yamarket_export_setup` и отдаём по `/api/yml/{profile}/` (см. `urlrewrite.php`).
+ - Порядок `<param>` в `<offer>` формируется на этапе WriteData и управляется конфигурацией `catalog.iblock.{APP_IBLOCK_CATALOG}.filter.sort`. Не сортировать в ExtendData.
+
+bitrix_guidance:
+- D7 ORM и события, избегай легаси API.
+- Автозагрузка модулей: НЕ используем `Loader::includeModule()` в доменном коде (lib/app/*) — все модули Bitrix (sale, catalog, iblock и др.) загружаются автоматически через `inc/autoloadclass.php` при обращении к классам. Исключения: миграции/скрипты в local/changes/db/* могут явно загружать модули.
+- Компоненты: логика в `class.php`, шаблоны отдельно; кешируем предсказуемо (`arResult` и ключи).
+- Настройки/секреты — из Option/.env; не хардкодить токены.
+- Миграции: sprint‑migration (или аналог) с up()/down(); указывать идемпотентность.
+- ХЛ‑блоки: описывать поля, индексы, код регистрации.
+- Кеш: Bitrix managed/tag cache + Redis при необходимости; фиксировать правила инвалидации.
+- SEO: `PREVIEW_TEXT` ≠ усечённый `DETAIL_TEXT`; хлебные/микроразметка; canonical/prev/next.
+
+catalog_url_policy:
+- Категория: `/catalog/{category}/`
+- Подкатегория: `/catalog/{category}/{subcategory}/` (без префикса `podvid-*`)
+- Модель: `/catalog/{category}/{subcategory}/{model}/`
+- Smart‑filter: сохраняем канонический порядок. Используем:
+  - `Catalog\Helper::checkUriOrder()`/`checkUriOrderAndRedirect()`
+  - `Seo::getPropsRegulars()` для карт префиксов; не хардкодить
+- Подвиды поддерживают множественный выбор с разделителем `-i-` в сегменте подвида.
+
+smart_filter:
+- Контроллер: `app:catalog.smart.filter`.
+- Категории/подвиды: `app:catalog.smart.filter.categories` с AJAX‑экшенами в `catalog.full/main/baseBlocks/ajax_before.php`:
+  - `categoriesFilter` → `/catalog/{category}/`
+  - `subcategoryFilter` → `/catalog/{category}/{subA-i-subB}/`, при этом SUBCATEGORY исключается из SMART_FILTER_PATH
+- Клиент: `app/local/changes/template/src/js/app/AppSmartFilter.js` — расширять существующие селекторы/хендлеры (исходник, компилируется через webpack).
+ - Бизнес‑правило: если у выбранной категории ровно одна подкатегория — блок подкатегорий не показываем и не добавляем в `arResult['SUBCATEGORIES']`.
+ - Быстрая покупка: `app:catalog.element` открывается через `api/modal/product-quick-buy` по клику `data-role="product-show-offers"`; на мобильном добавлять `mobile-pane__container__quick_buy` к контейнеру и `pane_fast_buy` к `.pane`.
+
+seo_and_redirects:
+- Нормализация URL: `App\EventHandler\Main\BeforeProlog` (lowercase, конец‑слэша, двойные слэши, `/page-N/`).
+- Canonical/meta: `Template\Helper::setMeta()`; поддерживать после изменений URL.
+- Постоянные редиректы: `checkForceRedirects()`.
+
+data_model:
+- Категории/подкатегории/модели: `Catalog\Helper::getCategoriesTree()` — базовый источник данных и URL.
+- Изображения: `Catalog\Helper::getProductImages()`.
+- Константы: `local/php_interface/inc/constants.php`.
+
+infrastructure:
+- Docker compose: `system/server/compose.yaml`.
+- ENV: `app/.env` (не коммитим). Добавлять/поддерживать `app/.env.example`.
+
+editing_guidelines:
+- Изменение URL‑поведения:
+  - Синхронизировать с `getUrlTemplates()` компонентов.
+  - Обновить AJAX‑хендлеры `catalog.full/main/baseBlocks/ajax_before.php`.
+  - Обновить `docs/architecture-map.md` и `docs/knowledge-map.md` (cheatsheet).
+  - Актуализировать справочники:
+    - `docs/data-model.md` — IBLOCK/HL‑схемы, индексы, URL‑паттерны, кеш.
+    - `docs/runbook.md` — шаги запуска dev, сборка фронта, QA‑чеклист каталога.
+- Расширение фильтров:
+  - Использовать `Seo::getPropsRegulars()`/алиасы из конфига.
+  - Не дублировать префиксы вручную.
+  - Алиасы свойств — snake_case с подчёркиванием (например, `dizayn_kolca`), без дефисов в префиксах; это исключает неоднозначный парсинг и соответствует кодированию значений.
+- Шаблоны/JS:
+  - Соблюдать `data-role` и существующие модули App.*
+  - Динамический контент (modals/aside/`CupertinoPane`): инициализации слайдеров/zoom делать через `$.initialize`.
+- Категории/подвиды (принцип):
+  - Базовый путь каталога (категории и при наличии подвиды) формируем на сервере через `Catalog\Helper::getCategoriesUrl($categories, $subcategories)`.
+  - `SUBCATEGORY` не включаем в `SMART_FILTER_PATH` (никаких `podvid-*`); в умный путь попадают только остальные свойства.
+  - На фронте при изменении категории/подвида отправляем массивы `categories`/`subcategories`; сервер собирает `SEF_FOLDER`, затем добавляет закодированные свойства.
+  - Экшены `categoriesFilter` и `subcategoryFilter` обслуживаются единой веткой в `.../catalog.full/main/baseBlocks/ajax_before.php`.
+
+images_and_media:
+- В шаблонах не выполняем расчёты данных. Любую подготовку данных для шаблона переносим в `result_modifier.php`.
+- Единый формат изображений:
+  - Списки: использовать `$arItem['IMAGES_LIST']`/`$arItem['IMAGE']`.
+  - Детали/быстрая покупка: использовать `$arResult['IMAGES_LIST']`.
+  - Поля каждого элемента: `SRC`, `SRCSET`, `SIZES`, `ALT`, `TITLE`.
+  - `SRCSET` строить через `Template\Helper::IMAGE_SIZES` (без хардкода размеров); `SIZES` — через `TemplateHelper::getListImageSizes()`.
+  - Lazy‑loading: `class="lazyload"`, `data-src`, `data-srcset`, `data-sizes`.
+  - Не использовать `CFile::ResizeImageGet` для Media Store — только предсобранные размеры.
+
+imports_and_comments:
+- Один общий блок `use`. Все пути с начальным слешем.
+- Порядок: Bitrix (`\Bitrix\...`) → внешние (`\morphos\...`) → App (`\App\...`).
+- Комментарии пишем на русском, коротко и по делу (что и зачем).
+ - В одном `use` допускаем перечисление через запятую и переносы строк, например:
+   `use \\morphos\\Russian\\Cases,\\morphos\\Russian\\NounDeclension,\\App\\Template\\Helper as TemplateHelper;`
+ - Короткие, читаемые присваивания в условиях/циклах допустимы и одобряются:
+   - `if (!$items = getItems()) continue;`
+ - Отступы в PHP: используем ТОЛЬКО табуляцию (tabs). Пробелы для отступов не использовать.
+ - При каждом изменении файла удаляем неиспользуемые импорты из блока `use`.
+ - Внутри кода избегаем FQCN: все классы подключаем через `use` и используем короткие имена. Допускается FQCN только в редких случаях (динамические HL‑классы) при ложных срабатываниях линтера. Исключение: классы компонентов (`AppCatalogFullComponent`, `AppSearchFullComponent` и т.п.) — их не добавляем в `use`, а ссылаемся через корневой слэш прямо в коде: `\AppCatalogFullComponent`.
+ - Highload‑таблицы из `local/php_interface/lib/entity/*.php` не импортируем через `use`. Используем с ведущим слэшем в коде: `\CategoryTable::getList(...)`, `\SubcategoryTable::getList(...)`, `\BraidingTable::getList(...)`.
+ - Highload‑таблицы из `local/php_interface/lib/entity/*.php` не импортируем через `use`. Используем с ведущим слэшем в коде: `\CategoryTable::getList(...)`, `\SubcategoryTable::getList(...)`, `\BraidingTable::getList(...)`.
+ - Недопустимо использовать двойной обратный слэш перед корневыми HL‑классами: правильно `\CategoryTable::...`, ошибка `\\CategoryTable::...`. Для ревью ищем паттерном `\\\\[A-Za-z][A-Za-z0-9_]*Table::`.
+ - Разделяем PHP и HTML в шаблонах: закрываем `?>` перед HTML и открываем `<?` перед кодом. Избегаем inline‑HTML внутри открытого PHP. Пример: `<? if ($arResult['SUBCATEGORIES']) { ?> ... <? foreach ($arResult['ITEMS'] as $arCategory) { ?>`.
+ - Однострочные комментарии `//` — без пробела после слешей: правильно `//Комментарий`, а не `// Комментарий`. Пример: `//Подкатегории: тянем только для выбранных категорий`.
+
+php_doc_and_returns:
+- Для каждого метода PHP‑класса писать PHPDoc с кратким описанием сути (что делает метод), параметрами и возвращаемым типом.
+- Перед каждым `return` добавлять пустую строку для наглядности и читаемости.
+
+quality_checks:
+- Линты должны проходить; не вводить несуществующие классы (использовать FQCN или хелперы).
+- Проверять AJAX‑поток `app/local/changes/template/src/js/app/AppSmartFilter.js`/серверные блоки ответа.
+- Тестировать нормализацию/редиректы (category/subcategory/model).
+- Проверять, что min/max цены в `app:catalog.smart.filter` изменяются при добавлении/удалении любых фильтров; в шаблоне используются `FILTERED_VALUE` для диапазона.
+
+common_pitfalls:
+- HL‑ORM в шаблонах — избегать; использовать хелперы/предзагрузки.
+- Дублирование `podvid-*` в пути фильтра — SUBCATEGORY не должен попадать в SMART_FILTER_PATH, если в базовом пути.
+- Хардкод окружения — использовать `Ctx::config()` и константы.
+
+git_and_console:
+- Для длинных выводов Git избегать пейджера: использовать `--no-pager` и/или `-c core.pager=`.
+- Любые команды должны быть неинтерактивными; на долгие — фоновые задачи.
+
+commit_notes:
+- Описывать пользовательские изменения (формы URL, редиректы, фильтры, мета) и обновлённые документы под `docs/*`.
+  - При изменениях каталога фиксировать в `docs/knowledge-map.md` (раздел Catalog/Smart Filter) и ссылаться на файлы компонентов/шаблонов/JS.
+
+api_webhooks_style:
+- В `app/api/webhook/index.php` поддерживать алфавитную сортировку массива `$methodsMap`.
+
+title: Bitrix project assistant playbook (Trimiata)
+
+purpose:
+- Give the assistant actionable rules for reading, navigating and safely editing this Bitrix (D7) mono‑repo.
+
+golden_rules:
+- Read before you write. Prefer targeted, minimal edits; never refactor unrelated code.
+- Respect SEO/URL policies and existing redirects. Avoid introducing duplicate URLs.
+- No secrets in VCS. Do not commit .env or tokens; never print real tokens in chat.
+- Use project helpers and events; don’t re‑implement Bitrix plumbing.
+
+stack_basics:
+- DocumentRoot: `app/`. Bitrix core is in `app/bitrix` (mounted via Docker).
+- Domain code: `app/local/php_interface/lib/app/*` (Ctx/Seo/Catalog/Order/Template/etc.).
+- Components: `app/local/components/*` with templates under `app/local/templates/trimiata/components/...`.
+- Entry points and URL routing live in `app/urlrewrite.php` + component routers.
+
+catalog_url_policy:
+- Category: `/catalog/{category}/`
+- Subcategory: `/catalog/{category}/{subcategory}/` (no `podvid-*` prefix in URL)
+- Model: `/catalog/{category}/{subcategory}/{model}/`
+- Smart filter path must preserve canonical order; use:
+  - `Catalog\Helper::checkUriOrder()` and `checkUriOrderAndRedirect()`
+  - `Seo::getPropsRegulars()` for regex map; don’t hardcode prefixes
+
+smart_filter:
+- Controller component: `app:catalog.smart.filter`.
+- Categories filter: `app:catalog.smart.filter.categories` – handles categories/subcategories via AJAX actions in sections template:
+  - `categoriesFilter`: builds `/catalog/{category}/`.
+  - `subcategoryFilter`: builds `/catalog/{category}/{subcategory}/` and strips SUBCATEGORY from smart parts (no `podvid-*`).
+- Client: `app/local/changes/template/src/js/app/AppSmartFilter.js` controls events and AJAX; prefer extending selectors/handlers rather than rewriting (source, compiled via webpack).
+
+seo_and_redirects:
+- URL normalization in `App\EventHandler\Main\BeforeProlog` (lowercase, end‑slash, double slashes, pagination `/page-N/`).
+- Canonical/meta via `Template\Helper::setMeta()`; maintain canonical links after URL changes.
+- Static redirects (legacy paths) in `checkForceRedirects()`; extend there if adding permanent migrations.
+
+data_model:
+- Categories/Subcategories/Models provided via `Catalog\Helper::getCategoriesTree()`; use to derive URLs and selections.
+- Product images via `Catalog\Helper::getProductImages()`; avoid ad‑hoc file logic.
+- Use constants from `app/local/php_interface/inc/constants.php`.
+
+orders_and_integrations:
+- Sale events in `lib/events/sale/Order.php` (account number, UTM, email, 1C exchanges, rounding delivery).
+- ImShop integration in `App\Order\External\ImShop` (delivery/payment, basket calculation, order create, status sync). Keep mobile API consistent.
+- Dadata suggestions in `App\Suggestions\DadataService` with caching; don’t log full responses.
+
+- ImShop webhooks (search/filter): общие помощники и инварианты
+  - Не поднимаем `smart.filter` для API — используем пост‑фильтрацию ID из `app:search.page`.
+  - Обязательные помощники (внутри `ImShop`): `normalizeSearchTerm()` (артикул/штрихкод), `includeSearchPage()` (получение ID), `buildImShopPropertyFilter()` (directory→UF_XML_ID через `ImportHelper::getCode`, LIST→enum ID), `refineElementsByFilters()` (post‑фильтр + диапазон цен), `computeSlicePriceRange()` (крайние элементы по `PRICE_{APP_PRICE_ID}`).
+  - Ценовые условия в фильтрах строим только через `PRICE_{APP_PRICE_ID}` (не `CATALOG_PRICE_*`). Идентификатор фильтра цены в ImShop — `q_price`.
+
+infrastructure:
+- Docker compose and volumes under `system/server/compose.yaml`.
+- ENV expected in `app/.env`. Never commit; add/update `.env.example` instead.
+
+editing_guidelines:
+- When adding a URL behavior:
+  - Align with `getUrlTemplates()` in components.
+  - Update AJAX handlers in `catalog.full/main/baseBlocks/ajax_before.php` as needed.
+  - Add docs in `docs/architecture-map.md` and cheatsheets in `docs/knowledge-map.md`.
+- When extending filters:
+  - Prefer using existing encode/decode in `AppCatalogSmartFilter::encodeSmartParts()`.
+  - Don’t embed property prefixes; obtain from `Seo::getPropsRegulars()`/config aliases.
+  - Property aliases must use snake_case with underscores (e.g., `dizayn_kolca`), no hyphens in prefixes to avoid parsing issues and match value alias transforms.
+- When changing templates/JS:
+  - Keep data-role attributes consistent; wire events through existing App modules.
+
+ imports_and_comments:
+ - Always group imports in a single `use` block; all paths start with a leading slash.
+ - Order imports: Bitrix (`\Bitrix\...`) → external libs (e.g., `\morphos\...`) → App (`\App\...`).
+ - Write code comments in Russian; keep them short, clear, and describe purpose/intent.
+ - Single-line `//` comments must NOT contain a space after the slashes: prefer `//Comment`, not `// Comment` (e.g., `//Подкатегории: тянем только для выбранных категорий`).
+
+quality_checks:
+- Lints must pass; avoid introducing undefined classes in templates (fully qualify or reuse helpers).
+- Verify AJAX flows return `smartFilterResult` payload blocks consumed by `app/local/changes/template/src/js/app/AppSmartFilter.js`.
+- Test URL normalization and redirects after changes (category/subcategory/model pages).
+
+common_pitfalls:
+- Mixing HL ORM calls in templates. Prefer helpers or pre‑loaded data.
+- Duplicating `podvid-*` in smart filter path for subcategories – must be excluded from URL when subcategory is in base path.
+- Hardcoding environment specifics; use `Ctx::config()` and constants.
+
+commit_notes:
+- Reference what user‑visible behavior changes (URL shapes, redirects, filters, meta).
+- Update relevant docs under `docs/*` when changing architecture/URLs/filters`

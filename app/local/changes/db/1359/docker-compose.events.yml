@@ -1,0 +1,68 @@
+version: "3.9"
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: trimiata-events-clickhouse
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: ${CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT}
+      TZ: ${TZ}
+    volumes:
+      - ${EVENTS_DATA_ROOT}/clickhouse/data:/var/lib/clickhouse
+      - ${EVENTS_DATA_ROOT}/clickhouse/log:/var/log/clickhouse-server
+      - ./sql:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${CLICKHOUSE_HTTP_PORT}:8123"
+      - "${CLICKHOUSE_TCP_PORT}:9000"
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8123/ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - events_net
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: trimiata-events-redis
+    restart: unless-stopped
+    command: [ "sh", "-c", "redis-server --appendonly yes --requirepass \"$${REDIS_PASSWORD}\"" ]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      TZ: ${TZ}
+    volumes:
+      - ${EVENTS_DATA_ROOT}/redis/data:/data
+    ports:
+      - "${REDIS_PORT}:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "PING" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - events_net
+
+  collector:
+    image: nginx:1.27-alpine
+    container_name: trimiata-events-collector
+    restart: unless-stopped
+    command: [ "sh", "-c", "printf 'server { listen 80; location /health { return 200 \"ok\"; } location / { return 204; } }' > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'" ]
+    ports:
+      - "${COLLECTOR_PORT}:80"
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - events_net
+
+networks:
+  events_net:
+    driver: bridge

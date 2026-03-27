@@ -1,0 +1,23 @@
+columns format version: 1
+21 columns:
+`event_date` Date
+`event_time` DateTime
+`event_id` String
+`source` LowCardinality(String)
+`event_type` LowCardinality(String)
+`user_key` String
+`session_key` String
+`product_id` UInt64
+`context_type` LowCardinality(Nullable(String))
+`context_id` Nullable(String)
+`page_url` Nullable(String)
+`page_type` LowCardinality(Nullable(String))
+`referrer` Nullable(String)
+`device_type` LowCardinality(Nullable(String))
+`utm_source` Nullable(String)
+`utm_medium` Nullable(String)
+`utm_campaign` Nullable(String)
+`search_query` Nullable(String)
+`position` Nullable(UInt32)
+`payload_json` String
+`ingested_at` DateTime
