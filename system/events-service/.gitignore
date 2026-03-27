@@ -1,9 +1,43 @@
+# Dependencies & сборки
 node_modules/
 dist/
+build/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Логи пакетных менеджеров
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Секреты и локальный ENV (шаблоны .env.example не игнорируем)
 .env
+.env.*
+!.env.example
+!**/.env.example
+
+# Python
 __pycache__/
+*.py[cod]
+*$py.class
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
 .venv/
-data/
+venv/
+*.egg-info/
+.eggs/
 
+# Локальные данные / временные каталоги разработчика
+data/
+tmp/
+temp/
+*.sqlite
+*.sqlite3
+
+# OS
+.DS_Store
+Thumbs.db

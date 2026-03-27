@@ -1,21 +1,15 @@
-## Сборка и эксплуатация
+## Сборка и эксплуатация — **events.trimiata.ru** (этот репозиторий)
 
-### Docker/Compose
-- Конфигурация: `system/server/compose.yaml`
-- Volumes: `app/`, `bitrix/`, `upload/`, `.settings.php`
-- Сервисы: php (PHP‑FPM), nginx, сети mysql/memcached
+- Код и compose: `system/events-service/`.
+- Создать `system/events-service/infra/compose/.env` из `.env.example`, затем `make up` из каталога `system/events-service` (см. [system/events-service/README.md](../system/events-service/README.md)).
+- Сборка контракта: `make build-contract` / тесты: `make test-contract`.
+- Контур событий **независим** от PHP-FPM и каталога `app/`.
 
-### ENV
-- `.env` ожидается в `app/.env` (под ключи БД/кеша/интеграций)
+---
 
-### PHP‑пакеты
-- `app/local/php_interface/lib/composer.json` (Symfony, monolog, dotenv и др.)
+## Справочно: основной сайт **trimiata.ru** (Bitrix, другой клон)
 
-### Фронтенд
-- Исходники: `app/local/changes/template`
-- Сборка кладёт ассеты в `app/local/templates/trimiata/{dist,bundle}`
-
-## Сборка и эксплуатация
+Ниже — типовая схема полного монорепозитория с сайтом. **В проекте только events эти пути могут отсутствовать.**
 
 ### Docker/Compose
 - Конфигурация: `system/server/compose.yaml`.
@@ -83,5 +77,4 @@
 - **CI**:
   - Используйте связку: `npm ci && npm run build && npm run postbuild`.
   - Кэшируйте `~/.npm` в пайплайне; артефактом сохраняйте `app/local/templates/trimiata/bundle`.
-
 

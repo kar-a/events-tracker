@@ -1,4 +1,39 @@
-## План онбординга и получения контекста (Bitrix, Trimiata)
+## Онбординг **events.trimiata.ru**
+
+### Цели
+- Быстро понять **поток событий**: клиенты → HTTPS → collector → ClickHouse → джобы / Grafana / Redis.
+- Не путать с каталогом Bitrix: в **`system/events-service/`** нет `app/catalog.full` и нет шаблона «Тримиата».
+
+### План ознакомления (≈30–60 мин)
+1) Документы (10–15 мин)
+   - [README.md](../README.md) в корне репозитория и [docs/README.md](./README.md).
+   - [architecture-map.md](./architecture-map.md), [build-and-ops.md](./build-and-ops.md).
+   - [system/events-service/docs/STRUCTURE.md](../system/events-service/docs/STRUCTURE.md), [system/events-service/docs/architecture.md](../system/events-service/docs/architecture.md), [system/events-service/docs/event-contract.md](../system/events-service/docs/event-contract.md).
+   - [CHANGELOG.md](./CHANGELOG.md) (Unreleased — строки про events/collector).
+2) Запуск локально (10 мин)
+   - `cd system/events-service`, `cp infra/compose/.env.example infra/compose/.env`, `make up` (см. [system/events-service/README.md](../system/events-service/README.md)).
+   - Проверка: healthcheck‑скрипты из `system/events-service/scripts/`, дашборды Grafana при необходимости.
+3) Контракт (10 мин)
+   - `system/events-service/packages/contract/` — JSON Schema, типы, тест‑вектора.
+4) Связь с сайтом (5 мин)
+   - Как сайт/app шлют события: см. задачи в CHANGELOG (например, `App.raiseEvent` / черновик диспатча на events); политика URL каталога **не** задаётся в collector.
+
+### Оперативная разведка (grep / поиск)
+- `collector-node`, `POST /v1/events`, `events_raw`, `packages/contract`.
+- Docker: `system/events-service/infra/compose/`, `Makefile`.
+
+### Память и артефакты
+- Задачи по **витрине рекомендаций и схеме CH** — в [CHANGELOG.md](./CHANGELOG.md) и в коде под `system/events-service/`.
+- Исторические заметки про **каталог Bitrix** — в [knowledge-map.md](./knowledge-map.md) и [memory/INDEX.md](./memory/INDEX.md) (в основном про сайт).
+
+### Definition of Ready (events)
+- Понятен контракт поля события, известны эндпоинт ingestion и переменные окружения compose; есть план инвалидации/ретенции при работе с ClickHouse.
+
+---
+
+## План онбординга и получения контекста (основной сайт Bitrix, Trimiata)
+
+См. также указатель [legacy-main-site/README.md](./legacy-main-site/README.md). Этот раздел нужен, если вы правите **trimiata.ru** (PHP, компоненты, смарт‑фильтр).
 
 ### Цели
 - Быстро получить достаточный контекст для безопасных edits с минимальным риском.
@@ -7,7 +42,7 @@
 
 ### Чёткий план ознакомления (итерация ≤30–60 мин)
 1) Документы (5–10 мин)
-   - Прочитать: `docs/project-overview.md`, `architecture-map.md`, `modules-and-components.md`, `data-model.md`, `integrations.md`, `runbook.md`, `security-and-quality.md`.
+   - Прочитать: `docs/project-overview.md` (раздел про сайт), `architecture-map.md`, `modules-and-components.md`, `data-model.md`, `integrations.md`, `runbook.md`, `security-and-quality.md`.
    - Просмотреть `docs/CHANGELOG.md` (Unreleased + последний релиз) и `docs/knowledge-map.md`.
 2) Вход и нормализация URL (5 мин)
    - Код: `app/local/php_interface/lib/events/main/BeforeProlog.php` → `init()`, `checkForceRedirects()`, `initSeo()`.
@@ -23,7 +58,7 @@
    - Вебхуки: `app/api/webhook/*`, 1C: `app/api/1c/*`.
    - Домен: `App\Order\External\ImShop`, очередь обмена `App\Exchange::*`.
 6) Быстрая верификация окружения (опционально)
-   - `Makefile` цели, `system/server/compose.yaml`, `.env` ключи (см. `runbook.md`).
+   - `Makefile` цели, `system/server/compose.yaml`, `.env` ключи (см. `runbook.md` — раздел про сайт).
 
 Результат: сформирована карта маршрутов, фильтра, точек входа и интеграций; известно, куда вносить минимальные правки и какие правила не нарушать.
 
@@ -67,5 +102,4 @@
 - Категория/подкатегория/модель открываются (200), порядок фильтра канонизируется (301 при необходимости).
 - AJAX обновляет товары/счётчик/фильтр/быстрые ссылки; `modef`/`FILTER_URL` верны.
 - Canonical/meta выставляются, нет дублей URL, нет утечек секретов.
-
 

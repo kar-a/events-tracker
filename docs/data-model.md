@@ -1,4 +1,18 @@
-## Модель данных (каталог Trimiata)
+## Модель данных — **events.trimiata.ru**
+
+### ClickHouse и контракт
+- События попадают в сырые таблицы (например `events_raw`) после приёма collector’ом; DDL — `system/events-service/infra/clickhouse/sql/`.
+- Смысл полей и версия payload — [system/events-service/docs/event-contract.md](../system/events-service/docs/event-contract.md) и `system/events-service/packages/contract/` (JSON Schema, общие типы).
+- Таблицы для джоб и рекомендаций описываются в той же папке SQL по мере развития продукта (см. [architecture-map.md](./architecture-map.md)).
+
+### Кэш и выдача (план)
+- **Redis** — в compose; конкретные ключи/схемы задаются задачами на рекомендации, не в этом файле.
+
+Данные **основного сайта** (инфоблоки, HL каталога) описаны ниже — для согласования артикулов, категорий и событий с витриной.
+
+---
+
+## Модель данных — каталог **trimiata.ru** (Bitrix)
 
 ### Инфоблоки (IBLOCK)
 - `APP_IBLOCK_CATALOG = 50` — каталог товаров (NIМ/товар).

@@ -2,16 +2,17 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT_DIR"
+cd "$ROOT_DIR/infra/compose"
 
 if [[ ! -f .env ]]; then
-	echo "[1359] .env not found. Abort."
+	echo "[events-service] .env not found. Abort."
 	exit 1
 fi
 
+# shellcheck source=/dev/null
 source .env
 
-echo "[1359] Insert demo event into ${CLICKHOUSE_DB}.events_raw"
+echo "[events-service] Insert demo event into ${CLICKHOUSE_DB}.events_raw"
 docker exec trimiata-events-clickhouse clickhouse-client \
 	--user "$CLICKHOUSE_USER" \
 	--password "$CLICKHOUSE_PASSWORD" \
@@ -50,7 +51,7 @@ docker exec trimiata-events-clickhouse clickhouse-client \
 		'{\"price\":189900,\"currency\":\"RUB\"}'
 	)"
 
-echo "[1359] Last rows:"
+echo "[events-service] Last rows:"
 docker exec trimiata-events-clickhouse clickhouse-client \
 	--user "$CLICKHOUSE_USER" \
 	--password "$CLICKHOUSE_PASSWORD" \

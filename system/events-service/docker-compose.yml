@@ -1,0 +1,5 @@
+# Требуется Docker Compose plugin v2.20+ (поддержка `include`).
+# Если команда ниже падает — запускайте стек из каталога infra/compose (см. README и Makefile).
+
+include:
+  - path: infra/compose/docker-compose.events.yml

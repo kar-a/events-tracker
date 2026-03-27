@@ -1,5 +1,6 @@
 ---
-alwaysApply: true
+description: JSON-пресет Bitrix full-stack (основной сайт; не авто-для репозитория events)
+alwaysApply: false
 ---
 {
   "name": "Bitrix Full-Stack Assistant (GPT-5 Thinking)",

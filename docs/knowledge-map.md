@@ -1,5 +1,7 @@
 ## Knowledge Map (deep): Files → Effects → Intent
 
+**Продукт этого репозитория** — [events.trimiata.ru](../README.md) (`system/events-service/`). Карта ниже в основном про **основной сайт Bitrix** (исторические задачи); для событий ориентируйтесь на `system/events-service/docs/` и [architecture-map.md](./architecture-map.md).
+
 Legend
 - Формат: HASH | DATE | SUBJECT → Изменённые зоны → Эффект на сайт → Зачем (гипотеза)
 - Карта сгруппирована по темам. Детальные пути указываем проектно‑относительно.

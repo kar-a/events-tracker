@@ -6,6 +6,9 @@ How to use
 - Поиск: открой этот файл и перейди по ссылкам задач. Имена файлов = `YYYY-MM-DD__task-key__slug.md`.
 - Формат записи: кратко, структурировано (см. шаблон ниже). Ссылки на файлы кода и PR/коммиты приветствуются.
 
+Scope
+- Записи в каталоге `memory/` в основном относятся к **основному сайту** (Bitrix, каталог, заказы, ImShop). Для **events.trimiata.ru** используй [docs/architecture-map.md](../architecture-map.md), код и доки под `system/events-service/docs/`, при необходимости заводи отдельные карточки по договорённости команды.
+
 Conventions
 - Один файл на логическую задачу/исправление/мини-эпик.
 - Секции: Context → Key Decisions → Code Touchpoints → Gotchas → Verification → Follow-ups.

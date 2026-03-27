@@ -1,5 +1,5 @@
 ############################
-# OS X
+# OS
 ############################
 
 .DS_Store
@@ -30,9 +30,8 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 
-
 ############################
-# Packages
+# Archives / binaries
 ############################
 
 *.7z
@@ -58,7 +57,6 @@ $RECYCLE.BIN/
 *.swm
 *.pid
 
-
 ############################
 # Logs and databases
 ############################
@@ -68,18 +66,17 @@ $RECYCLE.BIN/
 *.sqlite
 *.sqlite3
 
-
 ############################
-# Misc.
+# IDE & local tools
 ############################
 
 *#
-ssl
 .idea
 nbproject
+.vscode
 
 ############################
-# Node.js
+# Node.js (общий)
 ############################
 
 lib-cov
@@ -87,18 +84,57 @@ lcov.info
 pids
 logs
 results
-node_modules
+node_modules/
 frontend/.stylelintcache
 .node_history
+*.tsbuildinfo
+.turbo
+.parcel-cache
 
-##### BITRIX ####
+############################
+# Python (общий, любая глубина)
+############################
+
+**/.venv/
+**/venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
+**/*.egg-info/
+**/.eggs/
+**/.cache/
+
+############################
+# Секреты и окружение
+############################
+
+.env
+.env.*
+!.env.example
+!**/.env.example
+ssl
+composer.phar
+log.txt
+
+############################
+# Инфраструктура (локальные тома / артефакты)
+############################
+
+infra/dev/docker/data/
+infra/dev/docker/logs/
+infra/mysql/data
+
+############################
+# Bitrix / app (основной сайт — при наличии в клоне)
+############################
 
 docker/mysql/bitrix.sql
 bitrix/bitrix/.settings.php
 /bitrix/local/composer.lock
 bitrix/local/composer.phar
-infra/dev/docker/data/
-infra/dev/docker/logs/
+
+app/.dev
 app/bitrix
 app/upload
 app/local/php_interface/lib/composer.lock
@@ -110,39 +146,13 @@ app/local/modules/koptelnya.synchronizer/lib/auth.data
 app/local/modules/koptelnya.synchronizer/syncCard.desc.txt
 app/sitemap*
 app/webstat
-
-log.txt
-
-# infra
-infra/mysql/data
-.env
-
-.vscode
-
-composer.phar
-
-#######
-
-
-app/.dev
-
-app/bitrix
-app/upload
 app/sitemap_*
 app/robots.txt
 
-
-#npm (for case if npm modules was installed in work folder)
-app/local/changes/template/.gitignore/node_modules
-app/local/changes/template/.gitignore/*.code-workspace
-app/local/changes/template/.gitignore.editorconfig
-app/local/changes/template/.gitignore/*.bak
+# Frontend template (webpack): зависимости и мусор рядом с исходниками
+app/local/changes/template/node_modules/
+app/local/changes/template/**/.stylelintcache
+app/local/changes/template/**/*.code-workspace
+app/local/changes/template/**/*.bak
 
 frontend/builder/cache
-
-# Python virtual envs and cache (any depth)
-**/.venv/
-**/__pycache__/
-
-# Кэш API результатов
-**/.cache/

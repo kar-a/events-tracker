@@ -1,11 +1,13 @@
 ---
-alwaysApply: true
+description: Плейбук Bitrix для репозитория основного сайта trimiata.ru (не для проекта только events)
+alwaysApply: false
 ---
 
 title: Bitrix project assistant playbook (Trimiata)
 
 purpose:
-- Дать ассистенту практичные правила для чтения, навигации и безопасного редактирования Bitrix (D7) моно-репозитория.
+- Дать ассистенту практичные правила для чтения, навигации и безопасного редактирования Bitrix (D7) **в репозитории основного сайта** (DocumentRoot `app/`).
+- **В репозитории только events.trimiata.ru** эти правила не подмешивать по умолчанию — см. `events-trimiata.mdc` (alwaysApply).
 
 golden_rules:
 - Читай перед тем, как писать. Делаем точечные правки; не рефакторим несвязанное.

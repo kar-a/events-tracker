@@ -1,5 +1,7 @@
 ## Инвентарь модулей и компонентов
 
+> **Scope:** этот файл описывает **основной сайт trimiata.ru** (Bitrix, `app/local/components/...`). Продукт **events.trimiata.ru** не использует эти компоненты; см. [architecture-map.md](./architecture-map.md) и `system/events-service/`.
+
 ### Компоненты `app:*`
 - catalog.full — маршрутизация каталога, хлебные, SEO, AJAX‑блоки
 - catalog.smart.filter — умный фильтр свойств

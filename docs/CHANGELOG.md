@@ -2,9 +2,10 @@
 
 Этот документ фиксирует только те изменения, что влияют на пользователей и эксплуатацию системы:
 
-- Конечных пользователей сайта
+- Конечных пользователей сайта **trimiata.ru**
 - Администраторов/контент‑менеджеров
 - Инженеров эксплуатации (DevOps/SRE)
+- Инженеров контура **events.trimiata.ru** (аналитика, рекомендации, collector, ClickHouse) — при изменении контракта, ingestion или инфраструктуры событий
 
 Основы и стиль:
 - Формат — Keep a Changelog; версии — SemVer (MAJOR.MINOR.PATCH).
@@ -30,9 +31,15 @@
 Не в релизе
 ------------------------
 
+### Changed
+- Документация в `docs/`: явный фокус на **events.trimiata.ru** (аналитика, рекомендации, `system/events-service/`); материалы по Bitrix/каталогу сгруппированы как legacy с указателем `docs/legacy-main-site/README.md`.
+	- Files → `docs/README.md`, `docs/project-overview.md`, `docs/onboarding-and-context.md`, `docs/runbook.md`, `docs/data-model.md`, `docs/integrations.md`, `docs/modules-and-components.md`, `docs/architecture-map.md`, `docs/security.md`, `docs/memory/INDEX.md`, `docs/CHANGELOG.md`, `docs/legacy-main-site/README.md`
+	- Effects → Вход в документацию с корня `docs/` описывает продукт событий и стек Node/ClickHouse/Redis/Grafana/Python; runbook и модели данных начинаются с контура events; интеграции и security содержат отдельные заметки по ingestion и PII.
+	- Intent → Убрать путаницу с интернет‑магазином **trimiata.ru** и сохранить справочный контекст сайта в одном месте.
+
 ### Added
 - 1359: Инфраструктурный bootstrap для events.trimiata.ru (ClickHouse/Redis/collector-заглушка)
-	- Files → `app/local/changes/db/1359/{README.md,.env.example,docker-compose.events.yml,sql/*,scripts/*}`
+	- Files → `system/events-service/{infra,scripts,Makefile}`; карточка задачи — `app/local/changes/db/1359/README.md`
 	- Effects → Добавлен готовый комплект запуска отдельного контура событий: compose, DDL ClickHouse (`events_raw`, `import_jobs`, `recommendation_pairs`), скрипты `prepare/up/init/healthcheck/demo/backup`, пошаговые команды развёртывания и эксплуатации.
 	- Intent → Ускорить внедрение площадки сбора событий для 1356 и стандартизировать операционные шаги до реализации API-коллектора.
 - 1356: Единая точка аналитики `App.raiseEvent` (dataLayer + черновик для events.trimiata.ru)
@@ -65,6 +72,18 @@
 	- Intent → Обеспечить соответствие требованиям законодательства о согласии на получение СМС-сообщений при авторизации пользователей. Улучшить пользовательский опыт при переключении между формами авторизации, исключив ложные ошибки валидации. Упростить поддержку кода за счет устранения дублирования и использования констант.
 
 ### Changed
+- events-service: убран лишний каталог `sql/` (оставалась только ссылка); указатель на DDL перенесён в `infra/clickhouse/README.md`; добавлены `docs/STRUCTURE.md` (каноническое дерево), `packages/README.md`, обновлены README и `.cursor/rules/events-trimiata.mdc`.
+	- Files → `system/events-service/{docs/STRUCTURE.md,infra/clickhouse/README.md,README.md,docs/{architecture.md,structure-comparison.md},packages/README.md}`, `README.md`, `docs/architecture-map.md`, `.cursor/rules/events-trimiata.mdc`
+	- Effects → Одна предсказуемая точка для навигации по репозиторию; меньше «пустых» папок.
+	- Intent → Упростить структуру и снизить дублирование путей к ClickHouse SQL.
+- Документация и правила: зафиксирован scope **только events.trimiata.ru** (без Bitrix/`app/` как части продукта); корневой `README.md` и `docs/architecture-map.md` переведены на контур событий; прежнее описание основного сайта вынесено в `docs/reference-architecture-main-site-bitrix.md`; в `docs/build-and-ops.md` сначала events-стек, ниже справочно Bitrix; обновлены `docs/README.md`, `docs/knowledge-map.md`, `system/events-service/README.md`. В Cursor: `events-trimiata.mdc` (alwaysApply), `bitrix.mdc` и `trimiata.mdc` — `alwaysApply: false`.
+	- Files → `README.md`, `docs/{README.md,architecture-map.md,build-and-ops.md,knowledge-map.md,reference-architecture-main-site-bitrix.md}`, `system/events-service/README.md`, `.cursor/rules/{events-trimiata.mdc,bitrix.mdc,trimiata.mdc}`
+	- Effects → Ассистент и команда по умолчанию ориентируются на collector/контракт/infra, а не на каталог Bitrix.
+	- Intent → Устранить смешение двух продуктов в одном рабочем клоне.
+- Ops: консолидация скриптов контура событий в `system/events-service/scripts/` и целей `Makefile` (`prepare-host`, `healthcheck`, `demo-insert`, `backup`); удалены дубликаты из `system/.dev/scripts/prepare` и `app/local/changes/db/1359` (оставлены README-указатели).
+	- Files → `system/events-service/{Makefile,README.md,scripts/*.sh}`, `system/.dev/scripts/prepare/README.md`, `app/local/changes/db/1359/README.md`
+	- Effects → Один канонический путь развёртывания; меньше расхождений путей к compose и SQL.
+	- Intent → Убрать лишние копии операционных скриптов и включений compose.
 - 1353: Замена текста СМС для входа в приложение
 	- Files → `app/local/php_interface/lib/app/User/Auth/Auth.php`
 	- Effects → В `Auth::loginOrRegister()` текст СМС при источнике `USER_SOURCE_IMSHOP` изменён на «Ваш код для входа в приложение Тримиата». Для сайта (`USER_SOURCE_SITE*`) сохранён прежний текст «Ваш код для входа на сайт trimiata.ru».

@@ -1,4 +1,23 @@
-## Runbook (Trimiata, Bitrix D7)
+## Runbook — **events.trimiata.ru** (`system/events-service/`)
+
+### Быстрый старт (Dev)
+1) `cd system/events-service`
+2) `cp infra/compose/.env.example infra/compose/.env` — заполните секреты и параметры по необходимости.
+3) `make up` (или см. альтернативы в [system/events-service/README.md](../system/events-service/README.md)).
+4) Инициализация ClickHouse и проверки — скрипты в `system/events-service/scripts/` (init / healthcheck; см. тот же README и [build-and-ops.md](./build-and-ops.md)).
+
+### Полезные ссылки
+- [system/events-service/docs/deployment.md](../system/events-service/docs/deployment.md) — деплой.
+- [system/events-service/docs/debugging.md](../system/events-service/docs/debugging.md) — отладка collector и окружения.
+- [architecture-map.md](./architecture-map.md) — схема потоков.
+
+### Чеклист после изменений ingestion / контракта
+- Обновлены `packages/contract` и приёмник collector при смене схемы.
+- Прогнаны тесты контракта (вектора), задокументирован breaking change в [CHANGELOG.md](./CHANGELOG.md).
+
+---
+
+## Справочно: основной сайт **trimiata.ru** (Bitrix D7)
 
 ### Быстрый старт (Dev)
 1) Подготовьте `app/.env` (см. примеры ключей ниже).

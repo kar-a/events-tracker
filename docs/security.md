@@ -6,6 +6,8 @@
 **Дата обновления:** 2026-01-27  
 **Ответственный:** Команда разработки
 
+**Контур events.trimiata.ru (кратко):** публичный приём только по **HTTPS**; тела событий валидировать по контракту; не писать в логи полные payload с персональными данными; секреты — только из окружения / secret store; **ClickHouse** и **Redis** не выставлять в интернет без TLS и ACL; на коллекторе — rate limiting и защита от злоупотреблений. Подробнее — [architecture-map.md](./architecture-map.md), [system/events-service/docs/deployment.md](../system/events-service/docs/deployment.md).
+
 ---
 
 ## Содержание

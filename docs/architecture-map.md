@@ -1,108 +1,68 @@
-## Архитектура и потоки
+## Архитектура и потоки — **events.trimiata.ru**
 
-### Компоненты системы
-- Веб-приложение Bitrix (DocumentRoot `app/`):
-  - Точки входа: `index.php`, `urlrewrite.php`, `app/.htaccess` → `/bitrix/urlrewrite.php`.
-  - Шаблон: `local/templates/trimiata` (инициализация ассетов, JS-модули, UI).
-  - Доменные слои: `local/php_interface/lib/app/*` (Ctx/Config/Seo/Catalog/Order/...)
-  - События (D7): `local/php_interface/lib/events/*`.
-  - Компоненты: `local/components/{app,opensource,trimiata,koptelnya}/*`.
-- Интеграции и API: `app/api/*` (webhook для ImShop, 1C и т.д.).
-- Инфраструктура: docker compose (`system/server/compose.yaml`), Dockerfile’ы (`system/lib/*`).
+### Scope репозитория
+- **Продукт этого проекта** — площадка сбора и обработки событий для домена **events.trimiata.ru** (отдельно от публичного сайта **trimiata.ru**). Цель — **аналитика на основе событий и система рекомендаций**: накопление в **ClickHouse**, агрегации и джобы (**Python**), выдача и кэш (**Redis**), наблюдаемость (**Grafana**); ядро **Bitrix** сюда не входит.
+- **Нет Bitrix и нет каталога `app/`** как части поставки: коллектор, хранилище и дашборды живут в **`system/events-service/`**.
+- **Основной сайт (PHP/Bitrix)** при необходимости описан справочно: [reference-architecture-main-site-bitrix.md](./reference-architecture-main-site-bitrix.md) — для согласования HTTP-контракта событий и понимания, откуда приходят клиенты (браузер, приложение, бэкенд).
 
-### Жизненный цикл запроса
-1) Nginx → PHP-FPM → `.htaccess` → `/bitrix/urlrewrite.php`.
-2) Bitrix грузит `bitrix/.settings.php` (монтируется из `system/server/data/bitrix/.settings.php`), читает `app/.env`.
-3) `local/php_interface/init.php` подключает:
-   - `inc/inc.php` → `inc/autoloadclass.php` — автоматическая загрузка модулей Bitrix через `spl_autoload_register` (модули sale, catalog, iblock и др. загружаются автоматически при обращении к классам).
-   - `lib/app/inc.php` — автозагрузка доменных классов и сервисов.
-   - `lib/entity/inc.php` — ORM сущности (HL/внутренние таблицы).
-   - `lib/events/inc.php` — регистрация событий.
-4) События:
-   - `main:OnBeforeProlog` — нормализация URL, 301-редиректы, SEO-инициализация, UTM, блокировка сканеров; инициализация `Ctx` и `TemplateHelper::initPageType()`.
-   - `sale:*` — расчеты, статусы, письма, ecommerce, отправка в 1С/ImShop, правила доставки/оплаты.
-   - `iblock/search/fileman/...` — индексация, редактор, каталожные хуки.
+### Компоненты контура events.trimiata.ru
 
-### Потоки данных (Mermaid)
+| Компонент | Роль | Код / конфиг |
+|-----------|------|----------------|
+| **Collector (Node)** | Ingestion `POST /v1/events`, batch, валидация по контракту | `system/events-service/apps/collector-node/` |
+| **Контракт событий** | JSON Schema, общие типы | `system/events-service/packages/contract/` |
+| **ClickHouse** | Сырые и проектные таблицы (`events_raw`, джобы, пары) | `system/events-service/infra/clickhouse/sql/` |
+| **Redis** | Очереди / serving (по мере внедрения) | compose в `infra/compose/` |
+| **Grafana** | Дашборды | `system/events-service/infra/grafana/` |
+| **Jobs (Python)** | Агрегации, импорты (каркас) | `system/events-service/apps/jobs-python/` |
+| **Nginx (пример)** | Терминация TLS, прокси на collector | `system/events-service/infra/nginx/` |
+
+Операции: `system/events-service/Makefile`, `system/events-service/scripts/*.sh`, см. [system/events-service/README.md](../system/events-service/README.md).
+
+### Поток данных (Mermaid)
 
 ```mermaid
-flowchart TD
-  Client --> Nginx
-  Nginx --> PHPFPM
-  PHPFPM -->|.htaccess| BitrixFC[bitrix/urlrewrite.php]
-  BitrixFC --> Settings[.settings.php + .env]
-  Settings --> Init[local/php_interface/init.php]
-  Init --> AppInc[lib/app/inc.php]
-  Init --> EntityInc[lib/entity/inc.php]
-  Init --> EventsInc[lib/events/inc.php]
-  EventsInc --> MainEvents[main:OnBeforeProlog...]
-  EventsInc --> SaleEvents[sale: OnSale* ...]
-  EventsInc --> IblockEvents[iblock/search/...]
-  Client -. AJAX/API .-> API[app/api/*]
-  API --> Domain[lib/app/*]
-  Domain --> BitrixCore[(Bitrix D7)]
+flowchart LR
+  subgraph clients [Клиенты вне этого репо]
+    Browser[Браузер trimiata.ru]
+    App[Моб. приложение]
+    JobsExt[Внешние джобы]
+  end
+  subgraph events [events.trimiata.ru — этот продукт]
+    LB[Nginx / TLS]
+    Col[collector-node]
+    CH[(ClickHouse)]
+    R[(Redis)]
+    Graf[Grafana]
+  end
+  Browser -->|HTTPS JSON| LB
+  App -->|HTTPS JSON| LB
+  JobsExt -->|HTTPS JSON| LB
+  LB --> Col
+  Col --> CH
+  Col --> R
+  CH --> Graf
 ```
 
-### Внешние интеграции (Service-паттерн)
-- Каждая интеграция реализуется в двух слоях:
-  - Service: HTTP (curl, заголовки, базовые хосты), единый `__call($method, $args)`.
-  - Фасад/исполняемый класс: доменные методы, подготовка пейлоадов и маршрутизация в Service.
-- Примеры:
-  - Telegram: `App\Telegram\Service` + `App\Telegram\Bot`.
-  - Notion: `App\Notion\Service` + `App\Notion\Notion`.
-- Вебхуки под API используют `app/api/core.php` (`ApiResult`) для JSON/статусов.
-- Данные интеграций в `upload/<service>/...` (раздельные каталоги).
+### Аналогия структуры с Bitrix (только для ориентира)
 
-### ЧПУ каталога и SEO-нормализация
-- ЧПУ-шаблоны (в `app/local/components/app/catalog.full/class.php::getUrlTemplates()`):
-  - `/catalog/{category}/`, `/catalog/{category}/{subcategory}/`, `/catalog/{category}/{subcategory}/{model}/`.
-- Нормализация URL и 301-редиректы до роутинга:
-  - `events/main/BeforeProlog::init()`: lowercase, двойные слэши, слэш в конце, пагинация `/page-N/` вместо `?PAGEN_1=N`.
-  - `events/main/BeforeProlog::checkForceRedirects()` — выправление известных некорректных путей.
-- Смарт‑фильтр и порядок параметров:
-  - `Catalog\Helper::checkUriOrderAndRedirect()` поддерживает канонический порядок параметров фильтра.
-  - Для подвидов (SUBCATEGORY) используется чистый сегмент `/{subcategory}/` — фильтр не добавляет префиксы в путь.
-  - Заголовки подвидов используют конфиг `catalog.categories.genitiveByName` через `Ctx::config()` для корректного родительного падежа (напр., «подвид часов», «подвид серег»).
-- Каноникал и OG:
-  - `Template\Helper::setMeta()` формирует `<link rel="canonical">`, OG‑мета, preconnect.
+Так же, как на основном сайте разделены **публичный слой** (`app/`), **локальная логика** (`local/`) и **интеграции** (`app/api/`), здесь разделены:
+- **runtime приложения** → `apps/*`
+- **общие правила данных** → `packages/contract`
+- **инфраструктура и DDL** → `infra/*`
 
-### Клиентский слой фильтров
-- `app/local/changes/template/src/js/app/AppSmartFilter.js`: обработка change/click, AJAX, обновления URL (исходник, компилируется через webpack)
-- `catalog.smart.filter*`: подготовка данных и шаблоны
+PHP и `local/php_interface` в **этом** репозитории не используются.
 
-### Quick Buy (быстрая покупка) — поток
-- Триггер: клик по `data-role=product-show-offers` (в списках/карточках) → `app/local/changes/template/src/js/app/AppBasket.js` вызывает `app.loadAjaxAside('product-quick-buy','api',{elementId,template})`.
-- Backend: `app/api/modal/product-quick-buy.php` (не подключает `api/core.php` повторно) → `APPLICATION->IncludeComponent('app:catalog.element', 'main', ['COMPACT_MODE'=>'Y',...])`.
-- Frontend: на desktop рендерится offcanvas; на mobile — `CupertinoPane` (`App.initCoopertinoPane()`), контейнер получает `mobile-pane__container__quick_buy`, родитель `.pane` — `pane_fast_buy`.
-- Dynamic init: после вставки HTML используются `$.initialize()` хуки для слайдера (`[data-role=detail-image-slider]`) и Fancybox/zoom.
-- Шаблон detail в `COMPACT_MODE`: скрыт основной слайдер, оставлены `thumbnails` (Fancybox); скрыты «Комплекты», «Просмотренные», WhatsApp, доставка.
+### Интеграция с trimiata.ru
+- Связь **только по сети**: HTTPS на хост **events.trimiata.ru**, тело запросов соответствует [event-contract.md](../system/events-service/docs/event-contract.md) и схеме `packages/contract/schema/event.jsonschema.json`.
+- Не добавлять зависимость от Bitrix ORM, `init.php` или файлов `app/` в код collector/jobs.
 
-### Правила код-стиля (фрагмент)
-- Импорты классов (use):
-  - Один общий блок `use`.
-  - Все пути начинаются с начального слеша.
-  - Порядок: вначале Bitrix (`\Bitrix\...`), затем внешние пакеты (например, `\morphos\...`), затем `\App\...`.
-  - Допускается перечисление нескольких импортов через запятую в одном `use` с переносами строк.
-- Короткие записи для читаемости:
-  - Предпочитаем конструкции вида `if (!$items = getItems()) continue;` вместо разнесённых присваиваний и проверок.
-- Отступы:
-  - PHP‑код форматируем табуляцией (tabs). Не используем пробелы для отступов.
-- Подключения (use):
-  - Удаляем неиспользуемые импорты при каждой правке файла.
-- Комментарии в коде пишем на русском языке, коротко и понятно, по делу (что и зачем делаем).
-  - В коде не используем полные FQCN; все классы подключаем через `use` и используем короткие имена (исключение допускается только для динамических HL‑классов, если статический анализатор ложно ругается).
-  - Highload‑таблицы из `local/php_interface/lib/entity/*.php` не подключаем через `use`. Используем с ведущим слэшем прямо в коде: `\CategoryTable::getList(...)`, `\SubcategoryTable::getList(...)`, `\BraidingTable::getList(...)`.
+### Типичные ошибки (этот репозиторий)
+- Класть DDL ClickHouse или дубли compose в «архивные» папки вне `system/events-service/infra/`.
+- Валидировать события «на глаз» в collector вместо общего пакета `packages/contract`.
+- Путать домен **events.trimiata.ru** с админкой/сайтом Bitrix — разные процессы, разные деплои.
 
-- PHP ↔ HTML в шаблонах:
-  - Переходы разделяем: закрываем `?>` перед HTML и открываем `<?` перед PHP‑кодом; не смешиваем HTML внутри открытого PHP.
-  - Пример: `<? if ($arResult['SUBCATEGORIES']) { ?> ... <? foreach ($arResult['ITEMS'] as $arCategory) { ?>`
-
-### Агенты/cron
-- В репозитории cron-задачи: `app/local/cron/*` (импорты, обмены, seo, заказы). Запуск по крону/через контейнер.
-
-### Фронтенд (сборка)
-- `app/local/changes/template/package.json` (webpack), билдит ассеты в шаблон `local/templates/trimiata/dist` и `bundle`.
-
-
-
-
+### Документация рядом с кодом
+- **Дерево каталогов и правила:** [system/events-service/docs/STRUCTURE.md](../system/events-service/docs/STRUCTURE.md)
+- Детальная архитектура стека: [system/events-service/docs/architecture.md](../system/events-service/docs/architecture.md)
+- Деплой и отладка: `system/events-service/docs/deployment.md`, `debugging.md`

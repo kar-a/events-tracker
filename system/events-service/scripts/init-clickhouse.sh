@@ -9,6 +9,7 @@ if [[ ! -f .env ]]; then
 	exit 1
 fi
 
+# shellcheck source=/dev/null
 source .env
 
 SQL_FILES=(
